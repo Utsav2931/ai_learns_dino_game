@@ -166,7 +166,7 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         elif event.type == KEYDOWN:
-            if event.key == K_SPACE and not dino.is_in_air and not dino.is_ducking:
+            if (event.key == K_SPACE or event.key == K_UP) and not dino.is_in_air and not dino.is_ducking:
                 dino.set_jump()
     keys = pygame.key.get_pressed()
     if keys[K_DOWN]:
@@ -192,7 +192,7 @@ while running:
         screen.fill((0,0,0))
         font = pygame.font.Font(None, 36)
         text = font.render("Game Over", True, (255, 255, 255))
-        screen.blit(text, (400, 100))
+        screen.blit(text, (440, 100))
         screen.blit(dino.dino[dino.img_index], (dino.x, dino.y))
         for base in bases:
             screen.blit(base.base, (base.x, base.y))
