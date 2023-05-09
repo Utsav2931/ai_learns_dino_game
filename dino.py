@@ -27,19 +27,16 @@ class Dino:
         self.is_ducking = False;
     
     def toggle_ducking(self):
-        if not self.is_ducking:
+        
+        self.is_ducking = not self.is_ducking
+        if(self.is_ducking):
             self.y = 384
-        self.is_ducking = True
+        else:
+            self.y = 350
         
         #self.y = 444 - dino_img[2].get_height()
         
-    
-    def toggle_not_ducking(self):
-        if self.is_ducking:
-            self.y = 350
-        self.is_ducking = False
         
-        #self.y = 350
 
     def draw(self, screen):
         if(self.is_in_air):
@@ -54,9 +51,10 @@ class Dino:
             self.img_index = 1
             if(self.is_ducking):
                 self.img_index = 3
-        
+        print(self.y)
         if(self.img_index >= 2):
-            screen.blit(self.dino[self.img_index], (self.x, 384))
+            screen.blit(self.dino[self.img_index], (self.x, self.y))
+            #self.y = 384
         else:
             screen.blit(self.dino[self.img_index], (self.x, self.y ))
     
@@ -152,10 +150,10 @@ def draw_window(screen, dino, bases, obstacles):
 def create_obstacle() -> list[Obstacle]:
     first_rand_img = random.randint(0, 2)
     second_rand_img = random.randint(0, 2)
-    first_x = random.randint(1100, 1500)
+    first_x = random.randint(1000, 1500)
     is_bird = random.randint(0, 100)
     if(is_bird > 70):
-        obstacles = [Obstacle(obstacle_img[first_rand_img], first_x), Bird(first_x + random.randint(300, 900))]
+        obstacles = [Obstacle(obstacle_img[first_rand_img], first_x), Bird(first_x + random.randint(400, 1000))]
     else:
         obstacles = [Obstacle(obstacle_img[first_rand_img], first_x), Obstacle(obstacle_img[second_rand_img], first_x + random.randint(300, 800))]
     return obstacles
@@ -168,17 +166,12 @@ clock = pygame.time.Clock()
 obstacles = create_obstacle()
 while running:
     clock.tick(60)
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        elif event.type == KEYDOWN:
-            if (event.key == K_SPACE or event.key == K_UP) and not dino.is_in_air and not dino.is_ducking:
-                dino.set_jump()
-    keys = pygame.key.get_pressed()
-    if keys[K_DOWN] and not dino.is_in_air:
-        dino.toggle_ducking()
-    else:
-        dino.toggle_not_ducking()
+    
+    # keys = pygame.key.get_pressed()
+    # if keys[K_DOWN] and not dino.is_in_air:
+    #     dino.toggle_ducking()
+    # else:
+    #     dino.toggle_not_ducking()
     if not game_over:
         draw_window(screen, dino, bases, obstacles)
         if len(obstacles) == 0:
@@ -208,6 +201,14 @@ while running:
             else:
                 screen.blit(obs.img, (obs.x, obs.y))
         pygame.display.update()
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        elif event.type == KEYDOWN:
+            if (event.key == K_SPACE or event.key == K_UP) and not dino.is_in_air and not dino.is_ducking:
+                dino.set_jump()
+            elif event.key == K_DOWN and not dino.is_in_air:
+                dino.toggle_ducking()
     
 
 
