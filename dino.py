@@ -27,12 +27,18 @@ class Dino:
         self.is_ducking = False;
     
     def toggle_ducking(self):
+        if not self.is_ducking:
+            self.y = 384
         self.is_ducking = True
+        
         #self.y = 444 - dino_img[2].get_height()
         
     
     def toggle_not_ducking(self):
+        if self.is_ducking:
+            self.y = 350
         self.is_ducking = False
+        
         #self.y = 350
 
     def draw(self, screen):
@@ -169,7 +175,7 @@ while running:
             if (event.key == K_SPACE or event.key == K_UP) and not dino.is_in_air and not dino.is_ducking:
                 dino.set_jump()
     keys = pygame.key.get_pressed()
-    if keys[K_DOWN]:
+    if keys[K_DOWN] and not dino.is_in_air:
         dino.toggle_ducking()
     else:
         dino.toggle_not_ducking()
