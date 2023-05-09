@@ -26,16 +26,9 @@ class Dino:
         self.in_air_cnt = 0
         self.is_ducking = False;
     
-    def toggle_ducking(self):
-        
+    def toggle_ducking(self): 
         self.is_ducking = not self.is_ducking
-        if(self.is_ducking):
-            self.y = 384
-        else:
-            self.y = 350
-        
-        #self.y = 444 - dino_img[2].get_height()
-        
+ 
         
 
     def draw(self, screen):
@@ -51,11 +44,14 @@ class Dino:
             self.img_index = 1
             if(self.is_ducking):
                 self.img_index = 3
-        print(self.y)
+                
         if(self.img_index >= 2):
+            self.y = 384
             screen.blit(self.dino[self.img_index], (self.x, self.y))
-            #self.y = 384
+            
         else:
+            if not self.is_in_air:
+                self.y = 350
             screen.blit(self.dino[self.img_index], (self.x, self.y ))
     
     def set_jump(self):
