@@ -2,21 +2,35 @@ import pygame
 from pygame.locals import *
 import os
 import random
+import neat
 
 pygame.init()
 
-width, height = 1000, 600
-screen = pygame.display.set_mode((width, height))
+
+width, height = 800, 600
 dino_img = [pygame.image.load(os.path.join('imgs', 'dino_run1.png')), pygame.image.load(os.path.join('imgs', 'dino_run2.png')), pygame.image.load(os.path.join('imgs', 'dino_duck1.png')), pygame.image.load(os.path.join('imgs', 'dino_duck2.png'))]
 base_img = pygame.image.load(os.path.join('imgs', 'ground.png'))
 obstacle_img = [pygame.image.load(os.path.join('imgs', 'cactus_1.png')),pygame.image.load(os.path.join('imgs', 'cactus_2.png')),pygame.image.load(os.path.join('imgs', 'cactus_3.png'))]
 bird_img = [pygame.image.load(os.path.join('imgs', 'bird_1.png')), pygame.image.load(os.path.join('imgs', 'bird_2.png'))]
-#print(350 + dino_img[0].get_height())
-#print(444 - dino_img[2].get_height())
+
+original_width = obstacle_img[1].get_width()
+original_height = obstacle_img[1].get_height() 
+original_width *= 1.3
+obstacle_img[1] = pygame.transform.scale(obstacle_img[1], (original_width, original_height)) 
+original_width = obstacle_img[0].get_width()
+original_height = obstacle_img[0].get_height() * 1.3
+original_width *= 2
+obstacle_img[0] = pygame.transform.scale(obstacle_img[0], (original_width, original_height)) 
+original_width = obstacle_img[2].get_width() * 1.3
+original_height = obstacle_img[2].get_height() * 1.2 
+obstacle_img[2] = pygame.transform.scale(obstacle_img[2], (original_width, original_height)) 
+
+
+gen = 0
 class Dino:
      
-    def __init__(self):
-        self.x = 70
+    def __init__(self, x):
+        self.x = x
         self.y = 350
         self.dino = dino_img
         self.img_count = 0
@@ -40,7 +54,7 @@ class Dino:
             self.img_index = 0
             if(self.is_ducking):
                 self.img_index = 2
-        if(self.img_count >= 10 and not self.is_in_air):
+        elif(self.img_count >= 10 and not self.is_in_air):
             self.img_index = 1
             if(self.is_ducking):
                 self.img_index = 3
@@ -80,7 +94,7 @@ class Base:
         self.x = x
         self.y = 350 + dino_img[0].get_height() - 7
         self.base = base_img
-        self.vel = 10
+        self.vel = 15
 
     def draw(self, screen):
         self.move()
@@ -91,8 +105,8 @@ class Base:
 
 class Bird:
     def __init__(self, x):
-        self.y = 284
-        self.vel = 10
+        self.y = 300
+        self.vel = 15
         self.x = x
         self.img_count = 0
         self.img = bird_img
@@ -104,10 +118,10 @@ class Bird:
     def draw(self, screen):
         self.move()
         self.img_count += 1
-        if self.img_count >=20:
+        if self.img_count >=16:
             self.img_index = 0
             self.img_count = 0
-        elif self.img_count >= 10:
+        elif self.img_count >= 8:
             self.img_index = 1
         
         
@@ -117,7 +131,7 @@ class Obstacle:
     def __init__(self, img, x):
         self.x = x;
         self.img = img
-        self.vel = 10
+        self.vel = 15
         self.y = dino_img[0].get_height() + 353 - img.get_height() 
     
     def move(self):
@@ -127,85 +141,161 @@ class Obstacle:
         self.move()
         screen.blit(self.img, (self.x, self.y))
 
-def draw_window(screen, dino, bases, obstacles):
+def draw_window(screen, dinos, bases, obstacles, instance):
+    global gen
+    pygame.font.init()
     screen.fill((0,0,0))
-    dino.draw(screen)
+    font = pygame.font.Font(None, 36)
+    text = font.render("Gen: " + str(gen), True, (255, 255, 255))
+    screen.blit(text, (100, 100))
+    font = pygame.font.Font(None, 36)
+    text = font.render("Alive: " + str(len(dinos)), True, (255, 255, 255))
+    screen.blit(text, (100, 150))
+    font = pygame.font.Font(None, 36)
+    #text = font.render("Is Bird: " + str((instance)), True, (255, 255, 255))
+    #screen.blit(text, (500, 200))
+    for dino in dinos:
+        dino.draw(screen)
     for base in bases:
         base.draw(screen)
     if(bases[0].x + base_img.get_width() <= 0):
         del bases[0]
         bases.append(Base(base_img.get_width()))
     for obs in obstacles:
-        #print(obs.x)
-        #screen.blit(obstacle_img[0], (300, 450))
+        
         obs.draw(screen)
     if obstacles[0].x < 0:
         del obstacles[0]
     pygame.display.update()
 
-def create_obstacle() -> list[Obstacle]:
-    first_rand_img = random.randint(0, 2)
-    second_rand_img = random.randint(0, 2)
-    first_x = random.randint(1000, 1500)
+def create_obstacle(dist) -> list[Obstacle]:
+    first_x = random.randint(900, 1200)
     is_bird = random.randint(0, 100)
-    if(is_bird > 70):
-        obstacles = [Obstacle(obstacle_img[first_rand_img], first_x), Bird(first_x + random.randint(400, 1000))]
+    
+    obstacles = []
+    rand_obst = random.randint(0, 2)
+    if(is_bird > 80 and dist > 20):
+        obstacles.append(Bird(first_x))
     else:
-        obstacles = [Obstacle(obstacle_img[first_rand_img], first_x), Obstacle(obstacle_img[second_rand_img], first_x + random.randint(300, 800))]
+        obstacles.append(Obstacle(obstacle_img[rand_obst], first_x))
+    rand_obst = random.randint(0, 2)
+    is_bird = random.randint(0, 100)
+    
+    if(is_bird > 80 and dist > 20):
+        obstacles.append(Bird(first_x + random.randint(600, 1200)))
+    else:
+        obstacles.append(Obstacle(obstacle_img[rand_obst], first_x + random.randint(600,1200)))
+    
     return obstacles
 
-running = True
-game_over = False
-dino = Dino()
-bases = [Base(0), Base(base_img.get_width())]
-clock = pygame.time.Clock()
-obstacles = create_obstacle()
-while running:
-    clock.tick(60)
+def main(genomes, config):
+    running = True
+    game_over = False
+    global gen 
+    gen += 1
     
-    # keys = pygame.key.get_pressed()
-    # if keys[K_DOWN] and not dino.is_in_air:
-    #     dino.toggle_ducking()
-    # else:
-    #     dino.toggle_not_ducking()
-    if not game_over:
-        draw_window(screen, dino, bases, obstacles)
-        if len(obstacles) == 0:
-            obstacles = create_obstacle()
-        dino_mask = pygame.mask.from_surface(dino.dino[dino.img_index])
-        obstacle_mask = ''
-        if (isinstance(obstacles[0].img, list)):
-            obstacle_mask = pygame.mask.from_surface(obstacles[0].img[obstacles[0].img_index])
+    bases = [Base(0), Base(base_img.get_width())]
+    clock = pygame.time.Clock()
+    obstacles = create_obstacle(0)
+    screen = pygame.display.set_mode((width, height))
+    nets = []
+    ge = []
+    dinos = []
+
+    for _, g in genomes:
+        net = neat.nn.FeedForwardNetwork.create(g, config)
+        nets.append(net)
+        
+        dinos.append(Dino(100))
+        g.fitness = 0 
+        ge.append(g)
+    score = 0
+    dist = 0
+    while running:
+        clock.tick(60)
+        dist += 0.01
+        
+        if not game_over:
+            if len(obstacles) == 0:
+                obstacles = create_obstacle(dist)
+
+
+            if len(dinos) == 0:
+                running = False
             
+            for x, dino in enumerate(dinos):
+                output = nets[x].activate((dino.x - obstacles[0].x, dino.is_in_air, dino.is_ducking, isinstance(obstacles[0].img, list)))
+                if output[0] > 0.5 and not dino.is_in_air and not dino.is_ducking:
+                    dino.set_jump()
+                if output[1] > 0.5 and not dino.is_in_air:
+                    dino.toggle_ducking()
+                    #dino.set_jump()
+            
+            for i in range(len(dinos)-1, -1, -1):
+                dino = dinos[i]
+                dino_mask = pygame.mask.from_surface(dino.dino[dino.img_index])
+                obstacle_mask = ''
+                if (isinstance(obstacles[0].img, list)):
+                    obstacle_mask = pygame.mask.from_surface(obstacles[0].img[obstacles[0].img_index])
+                    
+                else:
+                    obstacle_mask = pygame.mask.from_surface(obstacles[0].img)
+                off_set = (obstacles[0].x - dino.x, obstacles[0].y - dino.y)
+                collide = dino_mask.overlap(obstacle_mask, off_set)
+                if collide:
+                    ge[i].fitness -= 100
+                    dinos.pop(i)
+                    nets.pop(i)
+                    ge.pop(i)
+            
+            for x, dino in enumerate(dinos):
+                ge[x].fitness += dist
+
+            draw_window(screen, dinos, bases, obstacles, isinstance(obstacles[0].img, list))
         else:
-            obstacle_mask = pygame.mask.from_surface(obstacles[0].img)
-        off_set = (obstacles[0].x - dino.x, obstacles[0].y - dino.y)
-        collide = dino_mask.overlap(obstacle_mask, off_set)
-        if collide:
-            game_over = True
-    else:
-        screen.fill((0,0,0))
-        font = pygame.font.Font(None, 36)
-        text = font.render("Game Over", True, (255, 255, 255))
-        screen.blit(text, (440, 100))
-        screen.blit(dino.dino[dino.img_index], (dino.x, dino.y))
-        for base in bases:
-            screen.blit(base.base, (base.x, base.y))
-        for obs in obstacles:
-            if (isinstance(obs.img, list)):
-                screen.blit(obs.img[obs.img_index], (obs.x, obs.y))
-            else:
-                screen.blit(obs.img, (obs.x, obs.y))
-        pygame.display.update()
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        elif event.type == KEYDOWN:
-            if (event.key == K_SPACE or event.key == K_UP) and not dino.is_in_air and not dino.is_ducking:
-                dino.set_jump()
-            elif event.key == K_DOWN and not dino.is_in_air:
-                dino.toggle_ducking()
-    
+            screen.fill((0,0,0))
+            font = pygame.font.Font(None, 36)
+            text = font.render("Game Over", True, (255, 255, 255))
+            screen.blit(text, (440, 100))
+            screen.blit(dino.dino[dino.img_index], (dino.x, dino.y))
+            for base in bases:
+                screen.blit(base.base, (base.x, base.y))
+            for obs in obstacles:
+                if (isinstance(obs.img, list)):
+                    screen.blit(obs.img[obs.img_index], (obs.x, obs.y))
+                else:
+                    screen.blit(obs.img, (obs.x, obs.y))
+            pygame.display.update()
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                if event.type == KEYDOWN:
+                    if event.key == K_SPACE:
+                        main()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            elif event.type == KEYDOWN:
+                if (event.key == K_SPACE or event.key == K_UP) and not dino.is_in_air and not dino.is_ducking:
+                    dino.set_jump()
+                elif event.key == K_DOWN and not dino.is_in_air:
+                    dino.toggle_ducking()
+        
 
 
-pygame.quit()
+    pygame.quit()
+
+def run(config_path):
+    config = neat.config.Config(neat.DefaultGenome, neat.DefaultReproduction,
+                         neat.DefaultSpeciesSet, neat.DefaultStagnation,
+                         config_path)
+    p = neat.Population(config)
+    p.add_reporter(neat.StdOutReporter(True))
+    stats = neat.StatisticsReporter()
+    p.add_reporter(stats)
+    winner = p.run(main,100000)
+
+if __name__ == "__main__":
+    local_dir = os.path.dirname(__file__)
+    config_path = os.path.join(local_dir, 'config-feedforward.txt')
+    run(config_path)
